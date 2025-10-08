@@ -15,7 +15,7 @@ contract MyToken {
         decimals = _decimal;
         // transaction
         // from, to, data, value, gas,...
-        _mint(1000000000000000000, msg.sender);
+        _mint(1 * 10 ** uint256(decimals), msg.sender);
     }
 
     function _mint(uint256 amount, address owner) internal {
