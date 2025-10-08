@@ -22,6 +22,8 @@ contract MyToken {
     }
 
     function transfer(uint256 amount, address to) external {
+        require(balanceOf[msg.sender] >= amount, "insufficient balance");
+
         balanceOf[msg.sender] -= amount;
         balanceOf[to] += amount;
     }
