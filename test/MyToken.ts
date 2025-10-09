@@ -76,4 +76,64 @@ describe("My Token", () => {
       ).to.be.revertedWith("insufficient balance");
     });
   });
+  describe("TransferFrom", () => {
+    it("should emit Approval event", async () => {
+      const signer1 = signers[1];
+      await expect(
+        myTokenC.approve(signer1.address, hre.ethers.parseUnits("10", decimals))
+      )
+        .to.emit(myTokenC, "Approval")
+        .withArgs(signer1.address, hre.ethers.parseUnits("10", decimals));
+    });
+    it("should be reverted with insufficient allowance error", async () => {
+      const signer0 = signers[0];
+      const signer1 = signers[1];
+      await expect(
+        myTokenC
+          .connect(signer1)
+          .transferFrom(
+            signer0.address,
+            signer1.address,
+            hre.ethers.parseUnits("1", decimals)
+          )
+      ).to.be.revertedWith("insufficient allowance");
+    });
+  });
+  describe("Assignment 1 Tasecase", () => {
+    it("approve & transferFrom", async () => {
+      const signer0 = signers[0];
+      const signer1 = signers[1];
+
+      // should emit Approval event
+      // signer1 have approve 3MT from signer0
+      await expect(
+        myTokenC.approve(signer1.address, hre.ethers.parseUnits("5", decimals))
+      )
+        .to.emit(myTokenC, "Approval")
+        .withArgs(signer1.address, hre.ethers.parseUnits("5", decimals));
+
+      // should emit Transfer event
+      // signer0 --> signer1 with 3MT
+      await expect(
+        myTokenC
+          .connect(signer1)
+          .transferFrom(
+            signer0.address,
+            signer1.address,
+            hre.ethers.parseUnits("3", decimals)
+          )
+      )
+        .to.emit(myTokenC, "Transfer")
+        .withArgs(
+          signer0.address,
+          signer1.address,
+          hre.ethers.parseUnits("3", decimals)
+        );
+
+      // should have signer1 3MT
+      expect(await myTokenC.balanceOf(signer1)).equal(
+        hre.ethers.parseUnits("3", decimals)
+      );
+    });
+  });
 });
