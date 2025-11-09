@@ -21,6 +21,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 import "./ManagedAccess.sol";
+import "./MultiManagedAccess.sol";
 
 interface IMyToken {
     function transferFrom(address from, address to, uint256 amount) external;
@@ -30,7 +31,7 @@ interface IMyToken {
     function mint(uint256 amount, address owner) external;
 }
 
-contract TinyBank is ManagedAccess {
+contract TinyBank is MultiManagedAccess {
     event Staked(address from, uint256 amount);
     event Withdraw(uint256 amount, address to);
 
@@ -38,15 +39,32 @@ contract TinyBank is ManagedAccess {
 
     mapping(address => uint256) public lastClaimedBlock;
 
-    uint256 defaultRewardPerBlock = 1 * 10 ** 18;
-    uint256 rewardPerBlock;
+    uint256 public defaultRewardPerBlock = 1 * 10 ** 18;
+    uint256 public rewardPerBlock;
 
     mapping(address => uint256) public staked;
     uint256 public totalStaked;
 
-    constructor(IMyToken _stakingToken) ManagedAccess(msg.sender, msg.sender) {
+    constructor(
+        IMyToken _stakingToken
+    ) MultiManagedAccess(msg.sender, getManagers(), 3) {
         stakingToken = _stakingToken;
         rewardPerBlock = defaultRewardPerBlock;
+    }
+
+    function getManagers() internal pure returns (address[] memory) {
+        address[] memory managers = new address[](3);
+
+        // Account #17
+        managers[0] = 0xbDA5747bFD65F08deb54cb465eB87D40e51B197E;
+
+        // Account #18
+        managers[1] = 0xdD2FD4581271e230360230F9337D5c0430Bf44C0;
+
+        // Account #19
+        managers[2] = 0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199;
+
+        return managers;
     }
 
     // who, when?
@@ -62,7 +80,7 @@ contract TinyBank is ManagedAccess {
         _; // caller's code
     }
 
-    function setRewardPerBlock(uint256 _amount) external onlyManager {
+    function setRewardPerBlock(uint256 _amount) external onlyAllConfirmed {
         rewardPerBlock = _amount;
     }
 

@@ -20,7 +20,7 @@ describe("TinyBank", () => {
     tinyBankC = await hre.ethers.deployContract("TinyBank", [
       await myTokenC.getAddress(),
     ]);
-    await myTokenC.setManager(tinyBankC.getAddress());
+    await myTokenC.setManager(await tinyBankC.getAddress());
   });
 
   describe("Initialized state check", () => {
@@ -82,26 +82,45 @@ describe("TinyBank", () => {
       const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
       await expect(
         tinyBankC.connect(hacker).setRewardPerBlock(rewardToChange)
-      ).to.be.revertedWith("You are not authorized to manage this contract");
+      ).to.be.revertedWith("Not all confirmed yet");
+    });
+  });
+  describe("Manage", () => {
+    it("Should revert when create transaction with not manager", async () => {
+      const signer10 = signers[10];
+      await expect(tinyBankC.connect(signer10).confirm()).to.be.revertedWith(
+        "You are not a manager"
+      );
+    });
 
-      // await tinyBankC.setRewardPerBlock(rewardToChange);
+    it("Should confirmed return true when transaction with manager", async () => {
+      const signer17 = signers[17];
+      await tinyBankC.connect(signer17).confirm();
+      expect(await tinyBankC.confirmed(0)).equal(true);
+    });
 
-      // const signer0 = signers[0];
-      // const stakingAmount = hre.ethers.parseUnits("50", DECIMALS);
-      // await myTokenC.approve(await tinyBankC.getAddress(), stakingAmount);
-      // await tinyBankC.stake(stakingAmount);
+    it("Should revert when all managers not confirmed", async () => {
+      const rewardToCange = hre.ethers.parseUnits("10000", DECIMALS);
+      await expect(
+        tinyBankC.setRewardPerBlock(rewardToCange)
+      ).to.be.revertedWith("Not all confirmed yet");
+    });
 
-      // const BLOCKS = 5n;
-      // const transferAmount = hre.ethers.parseUnits("1", DECIMALS);
-      // for (var i = 0; i < BLOCKS; i++) {
-      //   await myTokenC.transfer(transferAmount, signer0.address);
-      // }
+    it("Should return changed rewardPerBlock when all managers confirmed", async () => {
+      const signer0 = signers[0];
+      const signer17 = signers[17];
+      const signer18 = signers[18];
+      const signer19 = signers[19];
+      const rewardToChange = hre.ethers.parseUnits("10000", DECIMALS);
 
-      // await tinyBankC.withdraw(stakingAmount);
-      // console.log(
-      //   hre.ethers.formatUnits(await myTokenC.balanceOf(signer0.address)),
-      //   DECIMALS
-      // );
+      await tinyBankC.connect(signer17).confirm();
+      await tinyBankC.connect(signer18).confirm();
+      await tinyBankC.connect(signer19).confirm();
+
+      await tinyBankC.connect(signer0).setRewardPerBlock(rewardToChange);
+      expect(await tinyBankC.rewardPerBlock()).equal(
+        hre.ethers.parseUnits("10000", DECIMALS)
+      );
     });
   });
 });
